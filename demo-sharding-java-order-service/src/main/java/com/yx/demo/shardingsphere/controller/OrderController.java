@@ -5,10 +5,7 @@ import com.yx.demo.shardingsphere.service.OrderService;
 import com.yx.demo.shardingsphere.utils.JsonData;
 import com.yx.demo.shardingsphere.vo.OrderVO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -39,9 +36,21 @@ public class OrderController {
      * @param userId
      * @return
      */
-    @PostMapping("/listOrder")
+    @GetMapping("/listOrder")
     public JsonData listOrder(Long userId) {
         List<OrderVO> orderVOList = orderService.listOrder(userId);
+        return JsonData.buildSuccess(orderVOList);
+    }
+
+    /**
+     * 查询用户的订单列表
+     * @param minUserId
+     * @param maxUserId
+     * @return
+     */
+    @GetMapping("/listOrderBetween")
+    public JsonData listOrderBetween(Long minUserId, Long maxUserId) {
+        List<OrderVO> orderVOList = orderService.listOrderBetween(minUserId, maxUserId);
         return JsonData.buildSuccess(orderVOList);
     }
 

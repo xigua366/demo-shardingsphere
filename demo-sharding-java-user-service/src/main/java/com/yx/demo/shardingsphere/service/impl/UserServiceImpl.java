@@ -37,7 +37,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDO> listUseretween(Long minUserId, Long maxUserId) {
+    public List<UserDO> listUserBetween(Long minUserId, Long maxUserId) {
         return userMapper.selectList(new QueryWrapper<UserDO>().between("user_id", minUserId, maxUserId));
     }
 

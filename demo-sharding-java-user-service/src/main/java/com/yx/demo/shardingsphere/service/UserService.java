@@ -31,7 +31,7 @@ public interface UserService {
      * @param maxUserId
      * @return
      */
-    List<UserDO> listUseretween(Long minUserId, Long maxUserId);
+    List<UserDO> listUserBetween(Long minUserId, Long maxUserId);
 
     /**
      * 新增用户信息

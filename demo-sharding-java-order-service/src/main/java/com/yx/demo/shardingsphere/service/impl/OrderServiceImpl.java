@@ -98,4 +98,9 @@ public class OrderServiceImpl implements OrderService {
         }
         return orderVOList;
     }
+
+    @Override
+    public List<OrderVO> listOrderBetween(Long minUserId, Long maxUserId) {
+        return orderMapper.listOrderBetween(minUserId, maxUserId);
+    }
 }

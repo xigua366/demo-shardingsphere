@@ -25,4 +25,12 @@ public interface OrderService {
      */
     List<OrderVO> listOrder(Long userId);
 
+    /**
+     * 查询用户的订单列表
+     * @param minUserId
+     * @param maxUserId
+     * @return
+     */
+    List<OrderVO> listOrderBetween(Long minUserId, Long maxUserId);
+
 }

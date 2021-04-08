@@ -14,4 +14,28 @@
         order_id, user_id, status
     </sql>
 
+
+    <resultMap id="orderResultMap" type="com.yx.demo.shardingsphere.vo.OrderVO">
+
+        <id column="order_id" property="orderId"/>
+        <result column="user_id" property="userId"/>
+        <result column="status" property="status"/>
+
+
+        <collection property="orderItemList" ofType="com.yx.demo.shardingsphere.vo.OrderItemVO">
+            <id column="item_id" property="itemId"/>
+            <result column="order_id" property="orderId"/>
+            <result column="user_id" property="userId"/>
+            <result column="product_code" property="productCode"/>
+            <result column="buy_num" property="buyNum"/>
+        </collection>
+
+    </resultMap>
+
+    <select id="listOrderBetween" resultMap="orderResultMap">
+        select a.order_id as order_id, a.user_id as user_id, a.status as status, b.item_id as item_id, b.product_code as product_code, b.buy_num as buy_num
+            from t_order a LEFT JOIN t_order_item b on a.order_id = b.order_id
+            where (a.user_id between #{minUserId} and #{maxUserId}) and (b.user_id between #{minUserId} and #{maxUserId})
+    </select>
+
 </mapper>

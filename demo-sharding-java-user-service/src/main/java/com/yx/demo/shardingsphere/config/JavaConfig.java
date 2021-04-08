@@ -15,10 +15,7 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author yangxi
@@ -101,9 +98,30 @@ public class JavaConfig {
                 }, new RangeShardingAlgorithm<Long>() {
                     @Override
                     public Collection<String> doSharding(Collection<String> collection, RangeShardingValue<Long> rangeShardingValue) {
+                        System.out.println("collection:" + collection + ", rangeShardingValue:" + rangeShardingValue);
+                        if(rangeShardingValue.getValueRange().hasLowerBound() && rangeShardingValue.getValueRange().hasUpperBound()) {
+                            Collection<String> results = new HashSet<>();
 
-                        // TODO
-                        return collection;
+                            Long lower = rangeShardingValue.getValueRange().lowerEndpoint();
+                            Long upper = rangeShardingValue.getValueRange().upperEndpoint();
+
+                            for(String ds : collection) {
+                                for(Long i = lower; i <= upper; i++) {
+                                    if(ds.endsWith((i % collection.size()) + "")) {
+                                        results.add(ds);
+                                        break;
+                                    }
+                                }
+                                
+                                if(results.size() == collection.size()) {
+                                    break;
+                                }
+                            }
+                            return results;
+                        } else {
+                            return collection;
+                        }
+
                     }
                 }));
 

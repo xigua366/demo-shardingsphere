@@ -16,7 +16,7 @@ public class OrderItemVO implements Serializable {
     /**
      * 订单条目ID
      */
-    private Integer itemId;
+    private Long itemId;
 
     /**
      * 订单ID

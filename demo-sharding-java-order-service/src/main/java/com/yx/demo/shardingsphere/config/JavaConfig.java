@@ -1,18 +1,25 @@
 package com.yx.demo.shardingsphere.config;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.google.common.collect.Range;
 import org.apache.shardingsphere.api.config.sharding.ShardingRuleConfiguration;
 import org.apache.shardingsphere.api.config.sharding.TableRuleConfiguration;
+import org.apache.shardingsphere.api.config.sharding.strategy.ComplexShardingStrategyConfiguration;
 import org.apache.shardingsphere.api.config.sharding.strategy.InlineShardingStrategyConfiguration;
+import org.apache.shardingsphere.api.config.sharding.strategy.StandardShardingStrategyConfiguration;
+import org.apache.shardingsphere.api.sharding.complex.ComplexKeysShardingAlgorithm;
+import org.apache.shardingsphere.api.sharding.complex.ComplexKeysShardingValue;
+import org.apache.shardingsphere.api.sharding.standard.PreciseShardingAlgorithm;
+import org.apache.shardingsphere.api.sharding.standard.PreciseShardingValue;
+import org.apache.shardingsphere.api.sharding.standard.RangeShardingAlgorithm;
+import org.apache.shardingsphere.api.sharding.standard.RangeShardingValue;
 import org.apache.shardingsphere.shardingjdbc.api.ShardingDataSourceFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author yangxi
@@ -72,12 +79,106 @@ public class JavaConfig {
         // 配置分库规则
         orderTableRuleConfig.setDatabaseShardingStrategyConfig(
                 // 基于用户ID user_id字段值对2取模进行分库路由
-                new InlineShardingStrategyConfiguration("user_id", "ds${user_id % 2}"));
+                // new InlineShardingStrategyConfiguration("user_id", "ds${user_id % 2}")
+
+                new StandardShardingStrategyConfiguration("user_id", new PreciseShardingAlgorithm<Long>() {
+
+                    @Override
+                    public String doSharding(Collection<String> collection, PreciseShardingValue<Long> preciseShardingValue) {
+                        // collection:[ds0, ds1], preciseShardingValue:PreciseShardingValue(logicTableName=t_order, columnName=user_id, value=1)
+                        System.out.println("collection:" + collection + ", preciseShardingValue:" + preciseShardingValue);
+                        for(String ds : collection) {
+                            if(ds.endsWith((preciseShardingValue.getValue() % collection.size()) + "")) {
+                                return ds;
+                            }
+                        }
+
+                        for(String ds : collection) {
+                            return ds;
+                        }
+                        return null;
+                    }
+                }, new RangeShardingAlgorithm<Long>() {
+
+                    @Override
+                    public Collection<String> doSharding(Collection<String> collection, RangeShardingValue<Long> rangeShardingValue) {
+                        // collection:[ds0, ds1], rangeShardingValue:RangeShardingValue(logicTableName=t_order, columnName=user_id, valueRange=[1‥10])
+                        System.out.println("collection:" + collection + ", rangeShardingValue:" + rangeShardingValue);
+                        if(rangeShardingValue.getValueRange().hasLowerBound() && rangeShardingValue.getValueRange().hasUpperBound()) {
+                            Collection<String> results = new HashSet<>();
+
+                            Long lower = rangeShardingValue.getValueRange().lowerEndpoint();
+                            Long upper = rangeShardingValue.getValueRange().upperEndpoint();
+
+                            for(String ds : collection) {
+                                for(Long i = lower; i <= upper; i++) {
+                                    if(ds.endsWith((i % collection.size()) + "")) {
+                                        results.add(ds);
+                                        break;
+                                    }
+                                }
+
+                                if(results.size() == collection.size()) {
+                                    break;
+                                }
+                            }
+                            return results;
+                        } else {
+                            return collection;
+                        }
+                    }
+                })
+
+        );
 
         // 配置分表规则
         orderTableRuleConfig.setTableShardingStrategyConfig(
                 // 基于订单ID order_id字段值对2取模进行分表路由
-                new InlineShardingStrategyConfiguration("order_id", "t_order_${order_id % 2}"));
+                // new InlineShardingStrategyConfiguration("order_id", "t_order_${order_id % 2}")
+                new StandardShardingStrategyConfiguration("order_id", new PreciseShardingAlgorithm<Long>() {
+
+                    @Override
+                    public String doSharding(Collection<String> collection, PreciseShardingValue<Long> preciseShardingValue) {
+                        // collection:[t_order_0, t_order_1], preciseShardingValue:PreciseShardingValue(logicTableName=t_order, columnName=order_id, value=1380096287751393281)
+                        System.out.println("collection:" + collection + ", preciseShardingValue:" + preciseShardingValue);
+                        for (String ds : collection) {
+                            if (ds.endsWith((preciseShardingValue.getValue() % collection.size()) + "")) {
+                                return ds;
+                            }
+                        }
+                        return null;
+                    }
+                }, new RangeShardingAlgorithm<Long>() {
+
+                    @Override
+                    public Collection<String> doSharding(Collection<String> collection, RangeShardingValue<Long> rangeShardingValue) {
+                        // collection:[ds0, ds1], rangeShardingValue:RangeShardingValue(logicTableName=t_order, columnName=user_id, valueRange=[1‥10])
+                        System.out.println("collection:" + collection + ", rangeShardingValue:" + rangeShardingValue);
+                        if(rangeShardingValue.getValueRange().hasLowerBound() && rangeShardingValue.getValueRange().hasUpperBound()) {
+                            Collection<String> results = new HashSet<>();
+
+                            Long lower = rangeShardingValue.getValueRange().lowerEndpoint();
+                            Long upper = rangeShardingValue.getValueRange().upperEndpoint();
+
+                            for(String ds : collection) {
+                                for(Long i = lower; i <= upper; i++) {
+                                    if(ds.endsWith((i % collection.size()) + "")) {
+                                        results.add(ds);
+                                        break;
+                                    }
+                                }
+
+                                if(results.size() == collection.size()) {
+                                    break;
+                                }
+                            }
+                            return results;
+                        } else {
+                            return collection;
+                        }
+                    }
+                })
+        );
 
         // 配置分片规则
         ShardingRuleConfiguration shardingRuleConfig = new ShardingRuleConfiguration();
@@ -92,13 +193,76 @@ public class JavaConfig {
         // 配置分库规则
         orderItemTableRuleConfig.setDatabaseShardingStrategyConfig(
                 // 基于用户ID user_id字段值对2取模进行分库路由
-                new InlineShardingStrategyConfiguration("user_id", "ds${user_id % 2}"));
+                // new InlineShardingStrategyConfiguration("user_id", "ds${user_id % 2}")
+
+                new ComplexShardingStrategyConfiguration("user_id", new ComplexKeysShardingAlgorithm<Long>() {
+
+                    @Override
+                    public Collection<String> doSharding(Collection<String> collection, ComplexKeysShardingValue<Long> complexKeysShardingValue) {
+                        // collection:[ds0, ds1], complexKeysShardingValue:ComplexKeysShardingValue(logicTableName=t_order_item, columnNameAndShardingValuesMap={user_id=[1]}, columnNameAndRangeValuesMap={})
+                        // collection:[ds0, ds1], complexKeysShardingValue:ComplexKeysShardingValue(logicTableName=t_order, columnNameAndShardingValuesMap={}, columnNameAndRangeValuesMap={user_id=[1‥10]})
+                        System.out.println("collection:" + collection + ", complexKeysShardingValue:" + complexKeysShardingValue);
+
+                        Map<String, Collection<Long>> shardingValuesMap = complexKeysShardingValue.getColumnNameAndShardingValuesMap();
+                        // shardingValuesMap：{user_id=[1]}
+                        System.out.println("shardingValuesMap：" + shardingValuesMap);
+                        Map<String, Range<Long>> rangeValuesMap = complexKeysShardingValue.getColumnNameAndRangeValuesMap();
+
+                        Collection<String> results = new HashSet<>();
+
+                        if(shardingValuesMap != null && !shardingValuesMap.isEmpty()) {
+                            for(String ds : collection) {
+                                Collection<Long> userIds = shardingValuesMap.get("user_id");
+                                for(Long userId : userIds) {
+                                    if(ds.endsWith((userId % collection.size()) + "")) {
+                                        results.add(ds);
+                                    }
+                                }
+
+                            }
+                            return results;
+                        }
+
+                        // rangeValuesMap：{user_id=[1‥10]}
+                        System.out.println("rangeValuesMap：" + rangeValuesMap);
+
+                        if(rangeValuesMap != null && !rangeValuesMap.isEmpty()) {
+                            Range<Long> userIdRange = rangeValuesMap.get("user_id");
+                            if(userIdRange.hasLowerBound() && userIdRange.hasUpperBound()) {
+                                Long lower = userIdRange.lowerEndpoint();
+                                Long upper = userIdRange.upperEndpoint();
+
+                                for(String ds : collection) {
+                                    for(Long i = lower; i <= upper; i++) {
+                                        if(ds.endsWith((i % collection.size()) + "")) {
+                                            results.add(ds);
+                                            break;
+                                        }
+                                    }
+                                    if(results.size() == collection.size()) {
+                                        break;
+                                    }
+                                }
+                            }
+                            return results;
+                        }
+                        return  collection;
+                    }
+                })
+
+        );
 
         // 配置分表规则
         orderItemTableRuleConfig.setTableShardingStrategyConfig(
                 // 基于订单ID order_id字段值对2取模进行分表路由
                 new InlineShardingStrategyConfiguration("order_id", "t_order_item_${order_id % 2}"));
         shardingRuleConfig.getTableRuleConfigs().add(orderItemTableRuleConfig);
+
+        // 绑定表
+        Collection<String> bindingTableGroups = new HashSet<>();
+        bindingTableGroups.add("t_order");
+        bindingTableGroups.add("t_order_item");
+        shardingRuleConfig.setBindingTableGroups(bindingTableGroups);
 
         // 获取数据源对象
         Properties properties = new Properties();

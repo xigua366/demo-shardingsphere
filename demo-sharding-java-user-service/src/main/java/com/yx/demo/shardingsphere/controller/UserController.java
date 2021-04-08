@@ -49,9 +49,9 @@ public class UserController {
      * @param maxUserId
      * @return
      */
-    @GetMapping("/listUseretween")
-    public JsonData listUseretween(Long minUserId, Long maxUserId) {
-        List<UserDO> users = userService.listUseretween(minUserId, maxUserId);
+    @GetMapping("/listUserBetween")
+    public JsonData listUserBetween(Long minUserId, Long maxUserId) {
+        List<UserDO> users = userService.listUserBetween(minUserId, maxUserId);
         return JsonData.buildSuccess(users);
     }
 
