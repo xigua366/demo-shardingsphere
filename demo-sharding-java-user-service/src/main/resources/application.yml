@@ -1,0 +1,14 @@
+server:
+  port: 7002
+
+spring:
+  application:
+    name: demo-sharding-java-user-service
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.yx.demo.shardingsphere.domain
+
