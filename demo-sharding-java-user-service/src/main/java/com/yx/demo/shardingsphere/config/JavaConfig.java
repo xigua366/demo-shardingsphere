@@ -4,12 +4,18 @@ import com.alibaba.druid.pool.DruidDataSource;
 import org.apache.shardingsphere.api.config.sharding.ShardingRuleConfiguration;
 import org.apache.shardingsphere.api.config.sharding.TableRuleConfiguration;
 import org.apache.shardingsphere.api.config.sharding.strategy.InlineShardingStrategyConfiguration;
+import org.apache.shardingsphere.api.config.sharding.strategy.StandardShardingStrategyConfiguration;
+import org.apache.shardingsphere.api.sharding.standard.PreciseShardingAlgorithm;
+import org.apache.shardingsphere.api.sharding.standard.PreciseShardingValue;
+import org.apache.shardingsphere.api.sharding.standard.RangeShardingAlgorithm;
+import org.apache.shardingsphere.api.sharding.standard.RangeShardingValue;
 import org.apache.shardingsphere.shardingjdbc.api.ShardingDataSourceFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -75,7 +81,32 @@ public class JavaConfig {
         // 配置分库规则
         userTableRuleConfig.setDatabaseShardingStrategyConfig(
                 // 基于用户ID user_id字段值对2取模进行分库路由
-                new InlineShardingStrategyConfiguration("user_id", "ds${user_id % 2}"));
+
+                // Inline分片算法不支持 between and 这种范围查找
+                // java.lang.IllegalStateException: Inline strategy cannot support this type sharding:RangeRouteValue(columnName=user_id, tableName=t_user, valueRange=[1‥1380014427721469954])
+                // new InlineShardingStrategyConfiguration("user_id", "ds${user_id % 2}")
+
+                // 改用standard标准的分片算法
+                new StandardShardingStrategyConfiguration("user_id", new PreciseShardingAlgorithm<Long>() {
+
+                    @Override
+                    public String doSharding(Collection<String> collection, PreciseShardingValue<Long> preciseShardingValue) {
+                        for(String ds : collection) {
+                            if(ds.endsWith((preciseShardingValue.getValue() % collection.size()) + "")) {
+                                return ds;
+                            }
+                        }
+                        return null;
+                    }
+                }, new RangeShardingAlgorithm<Long>() {
+                    @Override
+                    public Collection<String> doSharding(Collection<String> collection, RangeShardingValue<Long> rangeShardingValue) {
+
+                        // TODO
+                        return collection;
+                    }
+                }));
+
         shardingRuleConfig.getTableRuleConfigs().add(userTableRuleConfig);
 
         // 获取数据源对象
